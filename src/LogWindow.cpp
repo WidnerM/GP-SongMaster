@@ -144,15 +144,15 @@ void LogWindow::buttonClicked(juce::Button *buttonThatWasClicked)
 void LogWindow::initialize()
 {
     juce::MessageManager::getInstance()->callAsync([]() {
-        if (sfInstance == nullptr)
-        {
-            sfInstance = new LogWindow();
-            sfInstance->fWindow->setTopLeftPosition(100, 100);
-            LogWindow::log("HelloGP-JUCE library loaded and initialized.\n");
-        }
+        // if (sfInstance == nullptr)
+        //{
+        //    sfInstance = new LogWindow();
+        //    sfInstance->fWindow->setTopLeftPosition(100, 100);
+        //    LogWindow::log("HelloGP-JUCE library loaded and initialized.\n");
+        //}
 
-        jassert(sfInstance != nullptr);
-        sfInstance->fWindow->setVisible(true);
+        // jassert(sfInstance != nullptr);
+        // sfInstance->fWindow->setVisible(true);
     });
 }
 

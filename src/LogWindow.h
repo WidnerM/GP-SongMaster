@@ -70,5 +70,3 @@ class LogWindow : public juce::Component, public juce::Button::Listener
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LogWindow)
 };
 
-//[EndFile] You can add extra defines here...
-//[/EndFile]

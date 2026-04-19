@@ -21,13 +21,15 @@ endfunction(fetch_dependency)
 FetchContent_Declare(
   gp-sdk
   GIT_REPOSITORY https://github.com/gigperformer/gp-sdk.git
-  GIT_TAG 0e95c145f69c73dbfc46324a70474c07fa61dd9f # v4.8
+  # GIT_TAG 756ecd249f1ff00f3d3a5955769408f74c9fa453 # sdk v60
+  GIT_TAG edc4313339dbb1526ccc5602b2ca6b0144ea199d # sdk v 63
 )
 fetch_dependency(gp-sdk)
 
 FetchContent_Declare(
   juce
   GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
-  GIT_TAG 2f980209cc4091a4490bb1bafc5d530f16834e58 # v6.1.6
+  # GIT_TAG 2f980209cc4091a4490bb1bafc5d530f16834e58 # v6.1.6
+  GIT_TAG 29396c22c93392d6738e021b83196283d6e4d850 # v8.0.12
 )
 fetch_dependency(juce)
