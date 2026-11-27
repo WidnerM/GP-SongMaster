@@ -1,9 +1,5 @@
 #include "LibMain.h"
 
-#include <gigperformer/sdk/GPMidiMessages.h>
-#include <gigperformer/sdk/GPUtils.h>
-#include <gigperformer/sdk/GigPerformerAPI.h>
-
 namespace gigperformer
 {
 namespace sdk
@@ -18,7 +14,7 @@ GigPerformerAPI *CreateGPExtension(LibraryHandle handle)
 } // namespace gigperformer
 
 // List of menu items
-std::vector<std::string> menuNames = {"Show Window", "Hide Window", "Set Dirty", "Set Clean"};
+std::vector<std::string> menuNames = {"Follow SM BPM", "Don't Follow SM BPM", "Set Dirty", "Set Clean"};
 
 int LibMain::GetMenuCount()
 {
@@ -43,10 +39,10 @@ void LibMain::InvokeMenu(int index)
         switch (index)
         {
         case 0:
-            
+            followSMbpm = true;
             break;
         case 1:
-            
+            followSMbpm = false;
             break;
         case 2:
             
@@ -100,14 +96,38 @@ void LibMain::ProcessOSC(juce::OSCMessage message)
 
     if (address == "/play" && message.size() == 1 && message[0].isInt32())
     {
-        // setWidgetValue(widgetname, (float) 1.0 * message[0].getInt32());
+        setPlayheadState(message[0].getInt32() == 1);
+    }
+
+    if (address == "/playhead" && message.size() == 1 && message[0].isFloat32())
+    {
+        // VIStageOSC.send("/VI-Stage/SeekPosition", message[0].getFloat32());
+        setWidgetCaption("sm_playhead", std::to_string(message[0].getFloat32()));
+        lastplayheadtime = std::chrono::steady_clock::now();
     }
 
     if (address == "/barBeat" && message.size() == 3)
     {
+        // we don't want to request the playhead position too often
+        if (lastplayheadtime + std::chrono::milliseconds(100) < std::chrono::steady_clock::now())
+        {
+            SongMasterOSC.send("/playhead"); // request playhead position from Song Master
+        }
+        if (followSMbpm)
+        {
+            setBPM(message[2].getFloat32());
+        }
         setWidgetCaption("sm_bar", std::to_string(message[0].getInt32()));
         setWidgetCaption("sm_beat", std::to_string(message[1].getInt32()));
         setWidgetCaption("sm_bpm", std::to_string(message[2].getFloat32()));
+    }
+
+    if (address == "/bpm" && message.size() == 1)
+    {
+        if (followSMbpm)
+        {
+            setBPM(message[0].getFloat32());
+        }
     }
 
     if (address == "/songLoaded" && message.size() == 3)

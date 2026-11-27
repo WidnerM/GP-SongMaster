@@ -1,33 +1,37 @@
 #pragma once
-// #include "LibMain.h"
 #include <juce_core/juce_core.h>
 #include <juce_graphics/juce_graphics.h>
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_osc/juce_osc.h>
 
+using namespace juce;
+
+// juce::OSCSender SM_OSC_sender;
+class AnOSCSender : public Component, public OSCSender
+{
+  public:
+    AnOSCSender();
+    virtual ~AnOSCSender() override;
+    bool connectToHost(const String &hostname, int port);   
+  private:
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AnOSCSender)
+};
 
 // OSC Receiver class.  Instantiate, then call connectToPort(portnumber)
-class AnOSCReceiver : public juce::Component,
-                      public juce::OSCReceiver,
-                      public juce::OSCReceiver::Listener<juce::OSCReceiver::MessageLoopCallback>
+class AnOSCReceiver : public Component,
+                      public OSCReceiver,
+                      public OSCReceiver::Listener<OSCReceiver::MessageLoopCallback>
 {
   public:
     //==============================================================================
-    AnOSCReceiver()
-    {
-        addListener(this);
-    }
+    AnOSCReceiver();
+    virtual ~AnOSCReceiver() override;
 
-    virtual ~AnOSCReceiver()
-    {
-        disconnect();
-    }
+    void static initialize();
+    void static finalize();
 
-    bool connectToPort(int port)
-    {
-        return connect(port);
-    }
+    bool connectToPort(int port);
 
   private:
     //==============================================================================
@@ -67,10 +71,10 @@ class AnOSCReceiver : public juce::Component,
 }; */
 
 
-class AnOSCReceiverWithAddress
-    : public juce::Component,
-                      public juce::OSCReceiver,
-                      public juce::OSCReceiver::ListenerWithOSCAddress<juce::OSCReceiver::MessageLoopCallback>
+/*  class AnOSCReceiverWithAddress
+    : public Component,
+      public OSCReceiver,
+      public OSCReceiver::ListenerWithOSCAddress<OSCReceiver::MessageLoopCallback>
 {
   public:
     //==============================================================================
@@ -92,3 +96,4 @@ class AnOSCReceiverWithAddress
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AnOSCReceiverWithAddress)
 };
+*/

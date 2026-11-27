@@ -1,14 +1,10 @@
 #pragma once
 
-#include <cstddef>
-
 #include <gigperformer/sdk/GPMidiMessages.h>
 #include <gigperformer/sdk/GPUtils.h>
 #include <gigperformer/sdk/GigPerformerAPI.h>
-#include <juce_gui_basics/juce_gui_basics.h>
-#include <juce_osc/juce_osc.h>
+#include <chrono>
 
-#include "CallbackSendmidi.h"
 #include "juceOSC.h"
 
 #include "Version.h"
@@ -43,17 +39,21 @@ class LibMain : public gigperformer::sdk::GigPerformerAPI
     // behavior
     LibMain(LibraryHandle handle) : GigPerformerAPI(handle)
     {
+        lib = this;
     }
     virtual ~LibMain()
     {
     }
 
-    // our global variables
-    int delaytime;
-    // DelayTimer delayTimer;
+    static LibMain *lib;
 
-    juce::OSCSender SM_OSC_sender;
+    // our global variables
     AnOSCReceiver SM_OSC_receive;
+    AnOSCSender SM_OSC_sender, SongMasterOSC, VIStageOSC;
+    std::string sm_oscaddress = "127.0.0.1:32123";
+    std::string sm_vistageaddress = "127.0.0.1:54341";
+    std::chrono::steady_clock::time_point lastplayheadtime = std::chrono::steady_clock::now();
+    bool followSMbpm = false;
 
     // from LibMain.cpp
     void ProcessOSC(juce::OSCMessage message);
@@ -77,11 +77,12 @@ class LibMain : public gigperformer::sdk::GigPerformerAPI
     // and call RegisterCallback for each of these methods
     void OnOpen() override
     {
-        // LogWindow::initialize();
-        juce::MessageManager::getInstance()->callAsync([]() {});
+        // juce::MessageManager::getInstance()->callAsync([]() {});
         // delayTimer.startTimer(500);
-
-        SM_OSC_sender.connect("127.0.0.1", 32123); // 32123 is Song Master's default OSC port
+        SM_OSC_receive.initialize();
+                
+        SongMasterOSC.connectToHost("127.0.0.1", 32123); // 32123 is Song Master's default OSC port
+        VIStageOSC.connectToHost("127.0.0.1", 54341); // 
         SM_OSC_sender.send("/extension/SongMaster/Test", (float)1.5);
 
         if (!SM_OSC_receive.connectToPort(54321)) // 54321 is our receive port
@@ -91,11 +92,13 @@ class LibMain : public gigperformer::sdk::GigPerformerAPI
     void OnClose() override
     {
 
-        SM_OSC_sender.disconnect();
+        SongMasterOSC.disconnect();
+        VIStageOSC.disconnect();
         SM_OSC_receive.disconnect();
         
-        juce::MessageManager::deleteInstance();
-        // LogWindow::finalize();
+        SM_OSC_receive.finalize();
+
+        // juce::MessageManager::deleteInstance();
     }
 
     void OnGlobalPlayStateChanged(double playing) override
@@ -116,8 +119,52 @@ class LibMain : public gigperformer::sdk::GigPerformerAPI
 
     void OnWidgetValueChanged(const std::string &widgetName, double newValue) override
     {
-        scriptLog("Widget Callback " + widgetName, 0);
-        if (widgetName == "sm_play") SM_OSC_sender.send("/play", (int) newValue * 1);
+        // scriptLog("Widget Callback " + widgetName, 0);
+        if (widgetName == "sm_play") SongMasterOSC.send("/play", (int) newValue * 1);
+        if (widgetName == "sm_followsmbpm")
+        {
+            followSMbpm = (newValue == 1.0);
+            setWidgetCaption("sm_followsmbpm", followSMbpm ? "Following" : "Local BPM");
+        }
+    }
+
+    void OnWidgetCaptionChanged(const std::string &widgetName, const std::string &newValue) override
+    {
+        // scriptLog("Widget Callback " + widgetName, 0);
+        if (widgetName == "sm_oscaddress")
+        {
+            SongMasterOSC.disconnect();
+            sm_oscaddress = newValue;
+            size_t pos = newValue.find(':');
+            if (pos != std::string::npos)
+            {
+                if (SongMasterOSC.connectToHost(newValue.substr(0, pos), std::stoi("0" + newValue.substr(pos + 1))))
+                {
+                    scriptLog("Connected to " + newValue, 0);
+                }
+                else 
+                {
+                    scriptLog("Failed to connect to " + newValue, 1);
+                }
+            }
+        }
+        else if (widgetName == "sm_vistageaddress")
+        {
+            VIStageOSC.disconnect();
+            sm_vistageaddress = newValue;
+            size_t pos = newValue.find(':');
+            if (pos != std::string::npos)
+            {
+                if (VIStageOSC.connectToHost(newValue.substr(0, pos), std::stoi("0" + newValue.substr(pos + 1))))
+                {
+                    scriptLog("Connected to " + newValue, 0);
+                }
+                else
+                {
+                    scriptLog("Failed to connect to " + newValue, 1);
+                }
+            }
+        }
     } 
 
     // examine a vector of widgets and structure the Surface structure to reflect widgets in the rackspace or global
@@ -163,6 +210,7 @@ class LibMain : public gigperformer::sdk::GigPerformerAPI
         registerCallback("OnClose");
         registerCallback("OnRackspaceActivated");
         registerCallback("OnWidgetValueChanged");
+        registerCallback("OnWidgetCaptionChanged");
         // registerCallback("OnGlobalPlayStateChanged");
         // registerCallback("OnMidiDeviceListChanged");
     }
